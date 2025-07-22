@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ফিজিক্স ১ম অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question:
+            "স্প্রিংকে প্রসারিত করলে এর মধ্যে কোন ধরনের শক্তি সঞ্চিত হয়?",
+          options: {
+            a: "তাপশক্তি",
+            b: "রাসায়নিক শক্তি",
+            c: "বিভবশক্তি",
+            d: "গতিশক্তি",
+          },
+          correct: "c",
+          explanation:
+            "<p>যখন একটি স্প্রিংকে প্রসারিত বা সংকুচিত করা হয়, তখন তার মধ্যে কাজ করার সামর্থ্য সঞ্চিত হয়। এই সঞ্চিত শক্তিকে বিভবশক্তি (Potential energy) বলে। স্প্রিং এর স্থিতিস্থাপক ধর্মের কারণে এটি সম্ভব হয়। স্প্রিংকে যত বেশি প্রসারিত বা সংকুচিত করা হয়, তত বেশি বিভবশক্তি জমা হয়। স্প্রিং ধ্রুবক 'k' এবং সরণ 'x' হলে, সঞ্চিত বিভবশক্তি হবে 0.5kx<sup>2</sup>।</p>",
+        },
+        {
+          id: 2,
+          question: "একটি বস্তুর ভরবেগ দ্বিগুণ করা হলে গতিশক্তি কত হবে?",
+          options: {
+            a: "একই থাকে",
+            b: "দ্বিগুণ",
+            c: "আটগুণ",
+            d: "চারগুণ",
+          },
+          correct: "d",
+          explanation:
+            "<p>কোনো বস্তুর গতিশক্তি (Kinetic energy) হলো তার ভর (m) এবং বেগের (v) উপর নির্ভরশীল। গতিশক্তির সূত্র হলো K = 0.5mv<sup>2</sup>।</p><br><p>আবার, ভরবেগ (Momentum) হলো ভর (m) এবং বেগের (v) গুণফল, অর্থাৎ P = mv।</p><br><p>আমরা গতিশক্তি এবং ভরবেগের মধ্যে সম্পর্ক স্থাপন করতে পারি:</p><br><p>P = mv</p><br><p>v = P/m</p><br><p>K = 0.5m(P/m)<sup>2</sup></p><br><p>K = 0.5m(P<sup>2</sup>/m<sup>2</sup>)</p><br><p>K = P<sup>2</sup>/2m</p><br><p>যদি ভরবেগ (P) দ্বিগুণ করা হয়, অর্থাৎ 2P হয়, তাহলে নতুন গতিশক্তি হবে:</p><br><p>K' = (2P)<sup>2</sup>/2m</p><br><p>K' = 4P<sup>2</sup>/2m</p><br><p>K' = 4(P<sup>2</sup>/2m)</p><br><p>K' = 4K</p><br><p>অতএব, ভরবেগ দ্বিগুণ করা হলে গতিশক্তি চারগুণ হবে।</p>",
+        },
+        {
+          id: 3,
+          question:
+            "কোন বস্তুর গতিশক্তি 300% বৃদ্ধি করা হলে, উক্ত বস্তুর ভরবেগ বাড়বে?",
+          options: {
+            a: "100%",
+            b: "300%",
+            c: "50%",
+            d: "150%",
+          },
+          correct: "a",
+          explanation:
+            "<p>ধরি, বস্তুর আদি গতিশক্তি K<sub>1</sub> এবং নতুন গতিশক্তি K<sub>2</sub>।</p><br><p>প্রশ্নানুসারে, গতিশক্তি 300% বৃদ্ধি পেয়েছে। এর অর্থ হলো, নতুন গতিশক্তি আদি গতিশক্তির সাথে আদি গতিশক্তির 300% যোগ করে পাওয়া যাবে।</p><br><p>K<sub>2</sub> = K<sub>1</sub> + (300/100) * K<sub>1</sub></p><br><p>K<sub>2</sub> = K<sub>1</sub> + 3K<sub>1</sub></p><br><p>K<sub>2</sub> = 4K<sub>1</sub></p><br><p>আমরা জানি, গতিশক্তি K = P<sup>2</sup>/2m, যেখানে P হলো ভরবেগ এবং m হলো ভর।</p><br><p>সুতরাং, P = &#x221A;(2mK)</p><br><p>আদি ভরবেগ P<sub>1</sub> = &#x221A;(2mK<sub>1</sub>)</p><br><p>নতুন ভরবেগ P<sub>2</sub> = &#x221A;(2mK<sub>2</sub>)</p><br><p>P<sub>2</sub> = &#x221A;(2m * 4K<sub>1</sub>)</p><br><p>P<sub>2</sub> = &#x221A;(4 * 2mK<sub>1</sub>)</p><br><p>P<sub>2</sub> = 2 &#x221A;(2mK<sub>1</sub>)</p><br><p>P<sub>2</sub> = 2P<sub>1</sub></p><br><p>ভরবেগের শতকরা বৃদ্ধি = ((P<sub>2</sub> - P<sub>1</sub>)/P<sub>1</sub>) * 100%</p><br><p>= ((2P<sub>1</sub> - P<sub>1</sub>)/P<sub>1</sub>) * 100%</p><br><p>= (P<sub>1</sub>/P<sub>1</sub>) * 100%</p><br><p>= 1 * 100%</p><br><p>= 100%</p><br><p>সুতরাং, বস্তুর ভরবেগ 100% বাড়বে।</p>",
+        },
+        {
+          id: 4,
+          question:
+            "ভূমি হতে 5m উঁচু থেকে পড়ন্ত কোন বস্তুর বিভব শক্তি ও গতিশক্তির অনুপাত কোনটি?",
+          options: {
+            a: "1:2",
+            b: "2:1",
+            c: "1:3",
+            d: "1:4",
+          },
+          correct: "-",
+          explanation: "-",
+        },
+        {
+          id: 5,
+          question:
+            "যদি কোন বস্তু ভূমির উপরে তোলা হয়, তবে কোন শক্তির বিপরীতে কাজটি করা হলো?",
+          options: {
+            a: "রাসায়নিক শক্তি (Chemical force)",
+            b: "মধ্যাকর্ষণ শক্তি (Gravitational force)",
+            c: "ঘর্ষণমূলক শক্তি (Frictional force)",
+            d: "তড়িৎ চৌম্বকীয় শক্তি (Electromagnetic force)",
+          },
+          correct: "b",
+          explanation:
+            "<p>যখন কোনো বস্তুকে ভূমির উপরে তোলা হয়, তখন পৃথিবীর অভিকর্ষ বল (মধ্যাকর্ষণ শক্তি) বস্তুকে নিচের দিকে টানে। এই অভিকর্ষ বলের বিরুদ্ধে কাজ করে বস্তুকে উপরে তুলতে হয়। এই কাজই বস্তুতে বিভবশক্তি (Potential energy) হিসেবে সঞ্চিত হয়।</p>",
+        },
+        {
+          id: 6,
+          question: "নিচের বস্তুসমূহের মধ্যে কোনটির গতিশক্তি বেশি?",
+          options: {
+            a: "ভর 2M এবং বেগ 3V",
+            b: "ভর 3M এবং বেগ 2V",
+            c: "ভর M এবং বেগ 4V",
+            d: "ভর 3M এবং বেগ V",
+          },
+          correct: "a",
+          explanation:
+            "<p>আমরা জানি, গতিশক্তি (Kinetic energy), K = 0.5mv<sup>2</sup>, যেখানে m হলো ভর এবং v হলো বেগ। আমরা প্রতিটি অপশনের জন্য গতিশক্তি হিসাব করব:</p><br><p><b>অপশন (A): ভর 2M এবং বেগ 3V</b></p><br><p>K<sub>A</sub> = 0.5 * (2M) * (3V)<sup>2</sup></p><br><p>K<sub>A</sub> = 0.5 * 2M * 9V<sup>2</sup></p><br><p>K<sub>A</sub> = 9MV<sup>2</sup></p><br><p><b>অপশন (B): ভর 3M এবং বেগ 2V</b></p><br><p>K<sub>B</sub> = 0.5 * (3M) * (2V)<sup>2</sup></p><br><p>K<sub>B</sub> = 0.5 * 3M * 4V<sup>2</sup></p><br><p>K<sub>B</sub> = 6MV<sup>2</sup></p><br><p><b>অপশন (C): ভর M এবং বেগ 4V</b></p><br><p>K<sub>C</sub> = 0.5 * M * (4V)<sup>2</sup></p><br><p>K<sub>C</sub> = 0.5 * M * 16V<sup>2</sup></p><br><p>K<sub>C</sub> = 8MV<sup>2</sup></p><br><p><b>অপশন (D): ভর 3M এবং বেগ V</b></p><br><p>K<sub>D</sub> = 0.5 * (3M) * (V)<sup>2</sup></p><br><p>K<sub>D</sub> = 1.5MV<sup>2</sup></p><br><p>বিভিন্ন অপশনের গতিশক্তি তুলনা করে দেখা যায়:</p><br><p>K<sub>A</sub> (9MV<sup>2</sup>) > K<sub>C</sub> (8MV<sup>2</sup>) > K<sub>B</sub> (6MV<sup>2</sup>) > K<sub>D</sub> (1.5MV<sup>2</sup>)</p><br><p>সুতরাং, ভর 2M এবং বেগ 3V এর ক্ষেত্রে গতিশক্তি সবচেয়ে বেশি।</p>",
+        },
+        {
+          id: 7,
+          question:
+            "পানির কোন ধর্মকে কাজে লাগিয়ে পানি থেকে বিদ্যুৎ উৎপাদন করা হয়?",
+          options: {
+            a: "সান্দ্রতা",
+            b: "পৃষ্ঠটান",
+            c: "বিভব শক্তি",
+            d: "স্থিতি শক্তি",
+          },
+          correct: "c",
+          explanation:
+            "<p>পানি থেকে বিদ্যুৎ উৎপাদনের প্রধান কৌশল হলো জলবিদ্যুৎ। এই পদ্ধতিতে বাঁধের সাহায্যে পানিকে উঁচু স্থানে জমা করা হয়। এই উঁচু স্থানে জমানো পানির মধ্যে বিভবশক্তি (Potential energy) সঞ্চিত থাকে। যখন এই পানিকে নিয়ন্ত্রণ করে টারবাইনের উপর দিয়ে প্রবাহিত করা হয়, তখন পানির বিভবশক্তি গতিশক্তিতে রূপান্তরিত হয় এবং এই গতিশক্তি টারবাইনকে ঘোরায়, যা জেনারেটরের মাধ্যমে বিদ্যুৎ উৎপাদন করে। এখানে 'স্থিতি শক্তি' বিভবশক্তিরই একটি প্রতিশব্দ হিসেবে ব্যবহৃত হয়েছে, তবে বিভবশক্তি শব্দটিই অধিকতর প্রচলিত এবং নির্দিষ্ট।</p>",
+        },
+        {
+          id: 8,
+          question:
+            "কোন নির্দিষ্ট ভরের বস্তুর গতিশক্তি, এর ভরবেগের সাথে সম্পর্ক কী?",
+          options: {
+            a: "বর্গমূলের সমানুপাতিক",
+            b: "বর্গের সমানুপাতিক",
+            c: "বর্গের ব্যস্তানুপাতিক",
+            d: "সমানুপাতিক",
+          },
+          correct: "a",
+          explanation:
+            "<p>কোনো বস্তুর গতিশক্তি (K) এবং ভরবেগ (P) এর মধ্যে সম্পর্ক হলো: K = P<sup>2</sup>/2m, যেখানে m হলো বস্তুর ভর।</p><br><p>এই সমীকরণ থেকে আমরা P কে K এর মাধ্যমে প্রকাশ করতে পারি:</p><br><p>P<sup>2</sup> = 2mK</p><br><p>P = &#x221A;(2mK)</p><br><p>যদি বস্তুর ভর (m) নির্দিষ্ট বা ধ্রুবক হয়, তাহলে P &#x221D; &#x221A;K।</p><br><p>এর অর্থ হলো, কোনো নির্দিষ্ট ভরের বস্তুর ভরবেগ তার গতিশক্তির বর্গমূলের সমানুপাতিক।</p>",
+        },
+        {
+          id: 9,
+          question:
+            "সৌর চুল্লীতে ভাত রান্না করলে, কোন শক্তি তাপশক্তিতে রূপান্তরিত হয়?",
+          options: {
+            a: "যান্ত্রিক শক্তি",
+            b: "শব্দ শক্তি",
+            c: "রাসায়নিক শক্তি",
+            d: "আলোক শক্তি",
+          },
+          correct: "d",
+          explanation:
+            "<p>সৌর চুল্লী (Solar cooker) সূর্যের আলোক শক্তিকে (Light energy) ব্যবহার করে খাদ্য রান্নার জন্য প্রয়োজনীয় তাপশক্তি উৎপাদন করে। সৌর চুল্লীর প্রতিফলক বা কাঁচের আবরণ সূর্যের আলোকরশ্মিকে একটি নির্দিষ্ট বিন্দুতে কেন্দ্রীভূত করে, যেখানে রান্নার পাত্রটি রাখা হয়। এই কেন্দ্রীভূত আলোক শক্তি তাপশক্তি হিসেবে রান্নার পাত্রে স্থানান্তরিত হয়, যা খাদ্য রান্না করতে সাহায্য করে।</p>",
+        },
+        {
+          id: 10,
+          question:
+            "কোন নির্দিষ্ট ভরের বস্তুর গতিশক্তি, এর ভরবেগের সাথে সম্পর্ক কী?",
+          options: {
+            a: "বর্গের সমানুপাতিক",
+            b: "বর্গমূলের সমানুপাতিক",
+            c: "বর্গের ব্যস্তানুপাতিক",
+            d: "সমানুপাতিক",
+          },
+          correct: "a",
+          explanation:
+            "<p>এই প্রশ্নটি আসলে আগের একটি প্রশ্নের পুনরাবৃত্তি এবং অপশনগুলোতে একটু অস্পষ্টতা রয়েছে। তবে যদি প্রশ্নটি এমন হয় যে, 'কোন নির্দিষ্ট ভরের বস্তুর গতিশক্তি, এর ভরবেগের বর্গের সাথে সম্পর্ক কী?' তাহলে উত্তরটি হবে 'সমানুপাতিক'। আর যদি প্রশ্নটি হয় 'কোন নির্দিষ্ট ভরের বস্তুর গতিশক্তি, ভরবেগের সাথে সম্পর্ক কী?' এবং অপশনগুলো পূর্বের মতো, তাহলে উত্তরটি 'বর্গমূলের সমানুপাতিক' হওয়া উচিত।</p><br><p>সঠিক ব্যাখ্যার জন্য, আমরা জানি:</p><br><p>গতিশক্তি K = 0.5mv<sup>2</sup></p><br><p>ভরবেগ P = mv</p><br><p>এই দুটি সমীকরণ থেকে আমরা পাই:</p><br><p>v = P/m</p><br><p>এখন v এর মান গতিশক্তির সমীকরণে বসিয়ে পাই:</p><br><p>K = 0.5m(P/m)<sup>2</sup></p><br><p>K = 0.5m(P<sup>2</sup>/m<sup>2</sup>)</p><br><p>K = P<sup>2</sup>/2m</p><br><p>যদি বস্তুর ভর (m) নির্দিষ্ট হয়, তবে 0.5/m একটি ধ্রুবক।</p><br><p>সুতরাং, K &#x221D; P<sup>2</sup></p><br><p>এর অর্থ হলো, কোনো নির্দিষ্ট ভরের বস্তুর গতিশক্তি তার ভরবেগের বর্গের সমানুপাতিক।</p>",
+        },
+        {
+          id: 11,
+          question: "1 কিলোওয়াট ঘণ্টা সমান-",
+          options: {
+            a: "1000 J",
+            b: "3600 J",
+            c: "6000 J",
+            d: "3.6 × 10<sup>6</sup> J",
+          },
+          correct: "d",
+          explanation:
+            "<p>কিলোওয়াট ঘণ্টা (kW-h) হলো শক্তির একটি ব্যবহারিক একক, যা সাধারণত বিদ্যুতের বিল পরিমাপের জন্য ব্যবহৃত হয়। জুল (J) হলো শক্তির SI একক।</p><br><p>আমরা জানি:</p><br><p>1 কিলোওয়াট (kW) = 1000 ওয়াট (W)</p><br><p>1 ঘণ্টা (h) = 3600 সেকেন্ড (s)</p><br><p>শক্তি (Energy) = ক্ষমতা (Power) * সময় (Time)</p><br><p>1 kW-h = 1 kW * 1 h</p><br><p>= 1000 W * 3600 s</p><br><p>= 3,600,000 W-s</p><br><p>যেহেতু 1 ওয়াট-সেকেন্ড (W-s) = 1 জুল (J),</p><br><p>সুতরাং, 1 kW-h = 3,600,000 J</p><br><p>= 3.6 × 10<sup>6</sup> J</p>",
+        },
+        {
+          id: 12,
+          question:
+            "কোন নীতি ব্যবহার করে বস্তুর ভরকে শক্তিতে রূপান্তর করা যায়?",
+          options: {
+            a: "কাজশক্তি উপপাদ্য",
+            b: "আইনস্টাইনের আপেক্ষিক তত্ত্ব",
+            c: "যান্ত্রিকশক্তির সংরক্ষণ নীতি",
+            d: "প্লাঙ্কের নীতি",
+          },
+          correct: "b",
+          explanation:
+            "<p>আইনস্টাইনের আপেক্ষিক তত্ত্ব (Theory of Relativity) এর অন্যতম গুরুত্বপূর্ণ একটি ফলাফল হলো ভর-শক্তি সমতা সূত্র (Mass-energy equivalence principle), যা E = mc<sup>2</sup> নামে পরিচিত। এই সূত্র অনুযায়ী, ভর (m) এবং শক্তি (E) পরস্পর রূপান্তরযোগ্য। এখানে c হলো আলোর দ্রুতি। এই নীতি পারমাণবিক বোমা এবং পারমাণবিক চুল্লিতে শক্তি উৎপাদনে ব্যবহৃত হয়, যেখানে সামান্য পরিমাণ ভর বিপুল পরিমাণ শক্তিতে রূপান্তরিত হয়।</p>",
+        },
+        {
+          id: 13,
+          question: "শক্তির ক্ষেত্রে কোনটি সঠিক নয়?",
+          options: {
+            a: "বহিঃস্থিতিশক্তি ভূ-পৃষ্ঠ হতে পদার্থের সাময়িক অবস্থানের উপর নির্ভরশীল",
+            b: "বহিঃগতিশক্তি পদার্থের গঠন প্রকৃতির উপর নির্ভরশীল",
+            c: "অভ্যন্তরীণ স্থিতিশক্তি বস্তুকণার অবস্থান ও গঠন প্রকৃতির উপর নির্ভরশীল",
+            d: "অভ্যন্তরীণ গতিশক্তি বস্তুকণার স্থানান্তরের উপর নির্ভরশীল",
+          },
+          correct: "b",
+          explanation:
+            "<p><b>অপশন (A): বহিঃস্থিতিশক্তি ভূ-পৃষ্ঠ হতে পদার্থের সাময়িক অবস্থানের উপর নির্ভরশীল - সঠিক।</b> বহিঃস্থিতিশক্তি বলতে সাধারণত মহাকর্ষীয় বিভবশক্তিকে বোঝানো হয়, যা বস্তুর উচ্চতার উপর নির্ভর করে। E<sub>p</sub> = mgh।</p><br><p><b>অপশন (B): বহিঃগতিশক্তি পদার্থের গঠন প্রকৃতির উপর নির্ভরশীল - ভুল।</b> বহিঃগতিশক্তি (Kinetic energy) হলো বস্তুর গতির কারণে সৃষ্ট শক্তি এবং এটি বস্তুর ভর (m) ও বেগের (v) উপর নির্ভরশীল (E<sub>k</sub> = 0.5mv<sup>2</sup>), পদার্থের গঠন প্রকৃতির উপর নয়।</p><br><p><b>অপশন (C): অভ্যন্তরীণ স্থিতিশক্তি বস্তুকণার অবস্থান ও গঠন প্রকৃতির উপর নির্ভরশীল - সঠিক।</b> অভ্যন্তরীণ স্থিতিশক্তি বস্তুর অণু-পরমাণুগুলোর আপেক্ষিক অবস্থান এবং তাদের মধ্যকার বন্ধনের প্রকৃতির উপর নির্ভর করে। উদাহরণস্বরূপ, রাসায়নিক শক্তি এক প্রকার অভ্যন্তরীণ স্থিতিশক্তি।</p><br><p><b>অপশন (D): অভ্যন্তরীণ গতিশক্তি বস্তুকণার স্থানান্তরের উপর নির্ভরশীল - সঠিক।</b> অভ্যন্তরীণ গতিশক্তি বস্তুর অণু-পরমাণুগুলোর এলোমেলো গতি এবং স্থানান্তরের উপর নির্ভর করে। এটি বস্তুর তাপমাত্রার সাথে সম্পর্কিত।</p>",
+        },
+        {
+          id: 14,
+          question: "কোনটি শক্তির প্রকারভেদ নয়?",
+          options: {
+            a: "চৌম্বক শক্তি",
+            b: "আণবিক শক্তি",
+            c: "শব্দ শক্তি",
+            d: "যান্ত্রিক শক্তি",
+          },
+          correct: "b",
+          explanation:
+            "<p>শক্তি বিভিন্ন রূপে প্রকাশ পায়। যেমন: চৌম্বক শক্তি (Magnetic energy), শব্দ শক্তি (Sound energy), যান্ত্রিক শক্তি (Mechanical energy), আলোক শক্তি (Light energy), তাপশক্তি (Heat energy), রাসায়নিক শক্তি (Chemical energy), পারমাণবিক শক্তি (Nuclear energy) ইত্যাদি।</p><br><p>আণবিক শক্তি (Molecular energy) সরাসরি শক্তির একটি প্রকারভেদ নয়। বরং, বিভিন্ন শক্তির রূপগুলো আণবিক স্তরে ব্যাখ্যা করা যেতে পারে। যেমন, রাসায়নিক শক্তি আণবিক বন্ধনের মধ্যে সঞ্চিত থাকে, অভ্যন্তরীণ শক্তি অণু-পরমাণুর গতি ও অবস্থানের কারণে হয়। 'পারমাণবিক শক্তি' (Nuclear energy) একটি সুনির্দিষ্ট শক্তির প্রকারভেদ, যা পরমাণুর নিউক্লিয়াসের অভ্যন্তরে সঞ্চিত থাকে, কিন্তু 'আণবিক শক্তি' একটি সাধারণ বা প্রচলিত শক্তির প্রকারভেদ হিসেবে বিবেচিত হয় না।</p>",
+        },
+        {
+          id: 15,
+          question: "কোন তথ্যটি গতিশক্তির (Kinetic energy) জন্য প্রযোজ্য নয়?",
+          options: {
+            a: "বস্তুর বেগ না থাকলে, গতিশক্তি থাকে না",
+            b: "গতিশক্তি বস্তুর অণু পরমাণুর আপেক্ষিক অবস্থানের উপর নির্ভর করে",
+            c: "কোন বস্তু গতিশীল হওয়ার জন্য শক্তি অর্জন করে",
+            d: "'m' ভরের বস্তুর বেগ 'v' হলে, বস্তুর গতিশক্তি &#189; mv&#178;",
+          },
+          correct: "b",
+          explanation:
+            "<p><b>অপশন (A): বস্তুর বেগ না থাকলে, গতিশক্তি থাকে না - সঠিক।</b> গতিশক্তির সূত্র E<sub>k</sub> = 0.5mv<sup>2</sup>। যদি v = 0 হয়, তাহলে E<sub>k</sub> = 0।</p><br><p><b>অপশন (B): গতিশক্তি বস্তুর অণু পরমাণুর আপেক্ষিক অবস্থানের উপর নির্ভর করে - ভুল।</b> গতিশক্তি বস্তুর গতির কারণে সৃষ্ট হয়। বস্তুর অণু-পরমাণুর আপেক্ষিক অবস্থানের উপর নির্ভর করে বিভবশক্তি (Potential energy) বা অভ্যন্তরীণ স্থিতিশক্তি।</p><br><p><b>অপশন (C): কোন বস্তু গতিশীল হওয়ার জন্য শক্তি অর্জন করে - সঠিক।</b> একটি বস্তু যখন গতিশীল হয়, তখন তার মধ্যে কাজ করার সামর্থ্য তৈরি হয়, যা গতিশক্তি নামে পরিচিত।</p><br><p><b>অপশন (D): 'm' ভরের বস্তুর বেগ 'v' হলে, বস্তুর গতিশক্তি &#189; mv&#178; - সঠিক।</b> এটি গতিশক্তির মৌলিক সূত্র।</p>",
+        },
+        {
+          id: 16,
+          question: "ক্ষমতা ও শক্তির ব্যাপারে নিম্নের কোন তথ্যটি সঠিক?",
+          options: {
+            a: "ক্ষমতা ধনাত্মক ও ঋণাত্মক দুই রকমের হতে পারে",
+            b: "শক্তি একরূপ থেকে অন্যরূপে রূপান্তরিত হয়",
+            c: "অসংরক্ষণশীল বল দ্বারা কৃত কাজ সম্পূর্ণরূপে পুনরুদ্ধার করা সম্ভব",
+            d: "কোথা থেকে উচ্চতা পরিমাপ করা হচ্ছে, গতিশক্তি তার উপর নির্ভরশীল",
+          },
+          correct: "b",
+          explanation:
+            "<p><b>অপশন (A): ক্ষমতা ধনাত্মক ও ঋণাত্মক দুই রকমের হতে পারে - ভুল।</b> ক্ষমতা (Power) হলো কাজ করার হার। সাধারণত ক্ষমতা ধনাত্মক মান হয়। ঋণাত্মক ক্ষমতা বলতে বোঝানো হয় যে শক্তি ব্যয় না করে শক্তি গ্রহণ করা হচ্ছে, যা প্রচলিত অর্থে ক্ষমতা নয়। কাজ ধনাত্মক বা ঋণাত্মক হতে পারে।</p><br><p><b>অপশন (B): শক্তি একরূপ থেকে অন্যরূপে রূপান্তরিত হয় - সঠিক।</b> এটি শক্তির সংরক্ষণ নীতি (Law of Conservation of Energy) এর একটি মূল ধারণা। শক্তি সৃষ্টি বা ধ্বংস করা যায় না, এটি কেবল এক রূপ থেকে অন্য রূপে রূপান্তরিত হতে পারে। উদাহরণস্বরূপ, রাসায়নিক শক্তি তাপশক্তি বা আলোক শক্তিতে রূপান্তরিত হয়।</p><br><p><b>অপশন (C): অসংরক্ষণশীল বল দ্বারা কৃত কাজ সম্পূর্ণরূপে পুনরুদ্ধার করা সম্ভব - ভুল।</b> অসংরক্ষণশীল বল (Non-conservative force) যেমন ঘর্ষণ বল দ্বারা কৃত কাজ সম্পূর্ণরূপে পুনরুদ্ধার করা সম্ভব নয়, কারণ কাজের কিছু অংশ তাপশক্তি বা শব্দশক্তিতে রূপান্তরিত হয়ে পরিবেশে ছড়িয়ে যায়।</p><br><p><b>অপশন (D): কোথা থেকে উচ্চতা পরিমাপ করা হচ্ছে, গতিশক্তি তার উপর নির্ভরশীল - ভুল।</b> গতিশক্তি (Kinetic energy) বস্তুর ভর এবং বেগের উপর নির্ভরশীল (0.5mv<sup>2</sup>), উচ্চতার উপর নয়। উচ্চতার উপর নির্ভরশীল হলো বিভবশক্তি (Potential energy)।</p>",
+        },
+        {
+          id: 17,
+          question: "পদার্থবিজ্ঞানে নিম্নের কোন তথ্যটি সঠিক?",
+          options: {
+            a: "mgh গতিশক্তির সমীকরণ",
+            b: "শক্তির মাত্রা: [ML<sup>2</sup>T<sup>-2</sup>]",
+            c: "ক্ষমতার সমীকরণ: &#189; mv&#178;",
+            d: "গতিশক্তি একটি ভেক্টর রাশি",
+          },
+          correct: "b",
+          explanation:
+            "<p><b>অপশন (A): mgh গতিশক্তির সমীকরণ - ভুল।</b> mgh হলো বিভবশক্তির (Potential energy) সমীকরণ, গতিশক্তির নয়। গতিশক্তির সমীকরণ হলো 0.5mv<sup>2</sup>।</p><br><p><b>অপশন (B): শক্তির মাত্রা: [ML<sup>2</sup>T<sup>-2</sup>] - সঠিক।</b> কাজ এবং শক্তি উভয়ই একই মাত্রা ধারণ করে। কাজের মাত্রা হলো বলের মাত্রা (MLT<sup>-2</sup>) এবং সরণের মাত্রা (L) এর গুণফল, অর্থাৎ [MLT<sup>-2</sup>] * [L] = [ML<sup>2</sup>T<sup>-2</sup>]।</p><br><p><b>অপশন (C): ক্ষমতার সমীকরণ: &#189; mv&#178; - ভুল।</b> 0.5mv<sup>2</sup> হলো গতিশক্তির সমীকরণ, ক্ষমতার নয়। ক্ষমতার সমীকরণ হলো কাজ/সময়, অর্থাৎ P = W/t বা P = Fv।</p><br><p><b>অপশন (D): গতিশক্তি একটি ভেক্টর রাশি - ভুল।</b> গতিশক্তি একটি স্কেলার রাশি। কারণ এর মান আছে কিন্তু কোনো নির্দিষ্ট দিক নেই।</p>",
+        },
+        {
+          id: 18,
+          question: "গতিশক্তির মাত্রা কোনটি?",
+          options: {
+            a: "[ML<sup>2</sup>T<sup>2</sup>]",
+            b: "[ML<sup>2</sup>T<sup>-1</sup>]",
+            c: "[ML<sup>2</sup>T<sup>-2</sup>]",
+            d: "[ML<sup>-2</sup>T<sup>2</sup>]",
+          },
+          correct: "c",
+          explanation:
+            "<p>গতিশক্তি (Kinetic energy) এর সূত্র হলো K = 0.5mv<sup>2</sup>।</p><br><p>এখানে:</p><br><p>m = ভর, যার মাত্রা [M]</p><br><p>v = বেগ, যার মাত্রা [LT<sup>-1</sup>]</p><br><p>সুতরাং, v<sup>2</sup> এর মাত্রা হবে [LT<sup>-1</sup>]<sup>2</sup> = [L<sup>2</sup>T<sup>-2</sup>]</p><br><p>এখন, গতিশক্তির মাত্রা = [M] * [L<sup>2</sup>T<sup>-2</sup>] = [ML<sup>2</sup>T<sup>-2</sup>]</p><br><p>উল্লেখ্য, কাজের মাত্রা এবং সকল প্রকার শক্তির মাত্রাই [ML<sup>2</sup>T<sup>-2</sup>] হয়ে থাকে।</p>",
+        },
+        {
+          id: 19,
+          question:
+            "k স্প্রিং ধ্রুবকবিশিষ্ট কোনো স্প্রিং-এর মুক্ত প্রান্তের x পরিমাণ সরণ ঘটলে সঞ্চিত বিভব শক্তি-",
+          options: {
+            a: "W = kx<sup>2</sup>",
+            b: "W = &#189; kx<sup>2</sup>",
+            c: "W = kx",
+            d: "W = -&#189; kx",
+          },
+          correct: "b",
+          explanation:
+            "<p>হুকের সূত্র (Hooke's Law) অনুযায়ী, একটি স্প্রিং-কে প্রসারিত বা সংকুচিত করতে প্রযুক্ত বল সরণের সমানুপাতিক, অর্থাৎ F = -kx (এখানে ঋণাত্মক চিহ্ন নির্দেশ করে যে স্প্রিং বল সরণের বিপরীত দিকে কাজ করে)।</p><br><p>যখন একটি স্প্রিং-এর মুক্ত প্রান্তের x পরিমাণ সরণ ঘটানো হয়, তখন এর মধ্যে যে বিভব শক্তি (Potential energy) সঞ্চিত হয়, তা হলো স্প্রিং-কে সরাতে কৃত কাজের সমান। এই কাজ W দ্বারা প্রকাশ করা হয়।</p><br><p>সঞ্চিত বিভব শক্তি, W = ∫ F dx = ∫ (kx) dx (সীমা 0 থেকে x পর্যন্ত)</p><br><p>W = 0.5kx<sup>2</sup></p><br><p>এটি স্প্রিং-এর স্থিতিস্থাপক বিভবশক্তির সূত্র।</p>",
+        },
+        {
+          id: 20,
+          question: "বস্তুর ভরবেগ ও গতিশক্তির মধ্যে সম্পর্ক হলো-",
+          options: {
+            a: "K = 2P/m",
+            b: "K = 2P<sup>2</sup>/m",
+            c: "K = P<sup>2</sup>/2m",
+            d: "K = P/2m",
+          },
+          correct: "c",
+          explanation:
+            "<p>আমরা জানি, গতিশক্তির (Kinetic energy) সূত্র K = 0.5mv<sup>2</sup>, যেখানে m হলো বস্তুর ভর এবং v হলো বেগ।</p><br><p>ভরবেগের (Momentum) সূত্র P = mv।</p><br><p>ভরবেগের সূত্র থেকে আমরা পাই, v = P/m।</p><br><p>এখন v এর এই মান গতিশক্তির সূত্রে বসিয়ে পাই:</p><br><p>K = 0.5m(P/m)<sup>2</sup></p><br><p>K = 0.5m(P<sup>2</sup>/m<sup>2</sup>)</p><br><p>K = P<sup>2</sup>/2m</p><br><p>এটি বস্তুর ভরবেগ ও গতিশক্তির মধ্যে সম্পর্ক স্থাপন করে।</p>",
+        },
+        {
+          id: 21,
+          question:
+            "কোনো বস্তুর ওপর ক্রিয়াশীল বল দ্বারা কৃত কাজ নিচের কোন রাশিটির পরিবর্তনের সমান?",
+          options: {
+            a: "তাপমাত্রা",
+            b: "ঘনত্ব",
+            c: "গতিশক্তি",
+            d: "বিভবশক্তি",
+          },
+          correct: "c",
+          explanation:
+            "<p>কাজ-শক্তি উপপাদ্য (Work-Energy Theorem) অনুযায়ী, কোনো বস্তুর ওপর ক্রিয়াশীল লব্ধি বল দ্বারা কৃত কাজ বস্তুটির গতিশক্তির পরিবর্তনের সমান।</p><br><p>গাণিতিকভাবে, W<sub>net</sub> = &#x2206;K = K<sub>f</sub> - K<sub>i</sub></p><br><p>যেখানে W<sub>net</sub> হলো মোট কৃত কাজ, &#x2206;K হলো গতিশক্তির পরিবর্তন, K<sub>f</sub> হলো চূড়ান্ত গতিশক্তি এবং K<sub>i</sub> হলো প্রাথমিক গতিশক্তি। এই উপপাদ্যটি নিউটনের গতির দ্বিতীয় সূত্র থেকে প্রাপ্ত এবং এটি শক্তি সংরক্ষণের একটি মৌলিক ধারণা।</p>",
+        },
+        {
+          id: 22,
+          question: "m ভরের একটি বস্তু E গতিশক্তিতে চলছে। এর রৈখিক ভরবেগ কত?",
+          options: {
+            a: "mE",
+            b: "&#x221A;2mE",
+            c: "m&#x221A;E",
+            d: "&#x221A;2m/E",
+          },
+          correct: "b",
+          explanation:
+            "<p>আমরা জানি, গতিশক্তি (E) এবং ভরবেগ (P) এর মধ্যে সম্পর্ক হলো:</p><br><p>E = P<sup>2</sup>/2m</p><br><p>এখানে E হলো গতিশক্তি, P হলো রৈখিক ভরবেগ এবং m হলো বস্তুর ভর।</p><br><p>এই সমীকরণ থেকে আমরা P এর মান বের করতে পারি:</p><br><p>P<sup>2</sup> = 2mE</p><br><p>P = &#x221A;(2mE)</p><br><p>সুতরাং, m ভরের একটি বস্তু E গতিশক্তিতে চললে এর রৈখিক ভরবেগ হবে &#x221A;2mE।</p>",
+        },
+        {
+          id: 23,
+          question:
+            "একটি রাইফেলের গুলির বেগ যদি দ্বিগুণ করা হয় তাহলে এর গতিশক্তি হবে-",
+          options: {
+            a: "2 গুণ",
+            b: "4 গুণ",
+            c: "8 গুণ",
+            d: "16 গুণ",
+          },
+          correct: "b",
+          explanation:
+            "<p>গতিশক্তির সূত্র হলো K = 0.5mv<sup>2</sup>, যেখানে m হলো বস্তুর ভর এবং v হলো বেগ।</p><br><p>ধরি, গুলির আদি বেগ v এবং আদি গতিশক্তি K<sub>1</sub>।</p><br><p>K<sub>1</sub> = 0.5mv<sup>2</sup></p><br><p>যদি গুলির বেগ দ্বিগুণ করা হয়, তাহলে নতুন বেগ হবে 2v।</p><br><p>নতুন গতিশক্তি K<sub>2</sub> হবে:</p><br><p>K<sub>2</sub> = 0.5m(2v)<sup>2</sup></p><br><p>K<sub>2</sub> = 0.5m(4v<sup>2</sup>)</p><br><p>K<sub>2</sub> = 4 * (0.5mv<sup>2</sup>)</p><br><p>K<sub>2</sub> = 4K<sub>1</sub></p><br><p>সুতরাং, রাইফেলের গুলির বেগ দ্বিগুণ করা হলে এর গতিশক্তি চারগুণ হবে।</p>",
+        },
+        {
+          id: 24,
+          question:
+            "কোনো গতিশীল বস্তুর গতিশক্তি Ek এবং ভরবেগ P হলে P বনাম &#x221A;Ek লেখচিত্রটি হবে-",
+          options: {
+            a: "অধিবৃত্ত",
+            b: "আয়তাকার পরাবৃত্ত",
+            c: "উপবৃত্ত",
+            d: "সরলরেখা",
+          },
+          correct: "d",
+          explanation:
+            "<p>আমরা জানি, গতিশক্তি (Ek) এবং ভরবেগ (P) এর মধ্যে সম্পর্ক হলো:</p><br><p>Ek = P<sup>2</sup>/2m</p><br><p>যেখানে m হলো বস্তুর ভর।</p><br><p>এই সমীকরণ থেকে P কে Ek এর মাধ্যমে প্রকাশ করলে পাই:</p><br><p>P<sup>2</sup> = 2mEk</p><br><p>P = &#x221A;(2mEk)</p><br><p>P = &#x221A;(2m) * &#x221A;Ek</p><br><p>যদি বস্তুর ভর (m) নির্দিষ্ট হয়, তাহলে &#x221A;(2m) একটি ধ্রুবক। এটিকে C দ্বারা প্রকাশ করা যাক।</p><br><p>P = C * &#x221A;Ek</p><br><p>এটি y = mx আকারের একটি সমীকরণ, যেখানে P হলো y-অক্ষ বরাবর এবং &#x221A;Ek হলো x-অক্ষ বরাবর। এই ধরনের সমীকরণ একটি মূলবিন্দুগামী সরলরেখা নির্দেশ করে।</p><br><p>সুতরাং, P বনাম &#x221A;Ek লেখচিত্রটি একটি সরলরেখা হবে।</p>",
+        },
+        {
+          id: 25,
+          question: "নিম্নের কোনটি শক্তির একক নয়?",
+          options: {
+            a: "kW-h",
+            b: "N-m",
+            c: "kgms<sup>-1</sup>",
+            d: "W-s",
+          },
+          correct: "c",
+          explanation:
+            "<p><b>অপশন (A): kW-h (কিলোওয়াট-ঘণ্টা) - শক্তির একক।</b> এটি বৈদ্যুতিক শক্তি পরিমাপের জন্য ব্যবহৃত হয়। 1 kW-h = 3.6 × 10<sup>6</sup> J।</p><br><p><b>অপশন (B): N-m (নিউটন-মিটার) - শক্তির একক।</b> নিউটন-মিটার হলো কাজের একক, যা জুল (Joule) এর সমতুল্য। 1 N-m = 1 J। কাজ হলো শক্তি স্থানান্তরের একটি পরিমাপ।</p><br><p><b>অপশন (C): kgms<sup>-1</sup> (কিলোগ্রাম-মিটার প্রতি সেকেন্ড) - শক্তির একক নয়।</b> এটি ভরবেগের (Momentum) একক। ভরবেগ P = mv, যেখানে m এর একক kg এবং v এর একক ms<sup>-1</sup>। সুতরাং, ভরবেগের একক kgms<sup>-1</sup>।</p><br><p><b>অপশন (D): W-s (ওয়াট-সেকেন্ড) - শক্তির একক।</b> ওয়াট-সেকেন্ড হলো জুল (Joule) এর সমতুল্য। 1 W-s = 1 J। ক্ষমতা (Power) = শক্তি (Energy) / সময় (Time)। সুতরাং, শক্তি = ক্ষমতা * সময়।</p>",
+        },
+        {
+          id: 26,
+          question: "সমআয়তনের একটি লৌহগোলক ও একটি টেনিস বলের ভরবেগ সমান হলে-",
+          options: {
+            a: "লৌহগোলকের গতিশক্তি বেশি",
+            b: "টেনিস বলের গতিশক্তি বেশি",
+            c: "উভয়ের গতিশক্তি সমান",
+            d: "গতিশক্তির ওপর ভরবেগের প্রভাব নেই",
+          },
+          correct: "b",
+          explanation:
+            "<p>আমরা জানি, গতিশক্তি K = P<sup>2</sup>/2m, যেখানে P হলো ভরবেগ এবং m হলো ভর।</p><br><p>প্রশ্নানুসারে, সমআয়তনের লৌহগোলক এবং টেনিস বলের ভরবেগ (P) সমান।</p><br><p>আমরা জানি, একই আয়তনের জন্য লোহার ভর টেনিস বলের ভরের চেয়ে অনেক বেশি হবে। অর্থাৎ, m<sub>লোহা</sub> > m<sub>টেনিস বল</sub>।</p><br><p>যেহেতু K = P<sup>2</sup>/2m, এবং P উভয় ক্ষেত্রেই সমান, তাই K এবং m এর মধ্যে সম্পর্ক হলো ব্যস্তানুপাতিক (K &#x221D; 1/m)।</p><br><p>যে বস্তুর ভর কম হবে, তার গতিশক্তি বেশি হবে। যেহেতু টেনিস বলের ভর লৌহগোলকের ভরের চেয়ে কম, তাই টেনিস বলের গতিশক্তি বেশি হবে।</p>",
+        },
+        {
+          id: 27,
+          question:
+            "একটি কণার ভরবেগ p। কণাটির গতিশক্তি দ্বিগুণ করা হলে এর নতুন ভরবেগ কত হবে?",
+          options: {
+            a: "p",
+            b: "2p",
+            c: "4p",
+            d: "&#x221A;2p",
+          },
+          correct: "d",
+          explanation:
+            "<p>আমরা জানি, গতিশক্তি (K) এবং ভরবেগ (P) এর মধ্যে সম্পর্ক হলো K = P<sup>2</sup>/2m।</p><br><p>এই সমীকরণ থেকে আমরা P কে K এর মাধ্যমে প্রকাশ করতে পারি:</p><br><p>P<sup>2</sup> = 2mK</p><br><p>P = &#x221A;(2mK)</p><br><p>ধরি, কণার আদি ভরবেগ p এবং আদি গতিশক্তি K।</p><br><p>যদি গতিশক্তি দ্বিগুণ করা হয়, তাহলে নতুন গতিশক্তি হবে 2K।</p><br><p>নতুন ভরবেগ P' হবে:</p><br><p>P' = &#x221A;(2m * 2K)</p><br><p>P' = &#x221A;(4mK)</p><br><p>P' = &#x221A;4 * &#x221A;(2mK)</p><br><p>P' = 2 * &#x221A;(2mK)</p><br><p>যেহেতু p = &#x221A;(2mK), সুতরাং P' = &#x221A;2p।</p><br><p>সুতরাং, কণাটির গতিশক্তি দ্বিগুণ করা হলে এর নতুন ভরবেগ &#x221A;2p হবে।</p>",
+        },
+        {
+          id: 28,
+          question:
+            "1 J গতিশক্তির কোনো বস্তুর গতির বিপরীতে 1 N বল প্রয়োগ করা হলে বস্তুটি কতদূর অগ্রসর হয়ে থেমে যাবে?",
+          options: {
+            a: "1 m",
+            b: "10 m",
+            c: "20 m",
+            d: "কোনোটিই নয়",
+          },
+          correct: "a",
+          explanation:
+            "<p>কাজ-শক্তি উপপাদ্য (Work-Energy Theorem) অনুযায়ী, বস্তুর ওপর কৃত মোট কাজ তার গতিশক্তির পরিবর্তনের সমান।</p><br><p>এখানে, বস্তুর প্রাথমিক গতিশক্তি (K<sub>i</sub>) = 1 J।</p><br><p>বস্তু থেমে গেলে চূড়ান্ত গতিশক্তি (K<sub>f</sub>) = 0 J।</p><br><p>গতিশক্তির পরিবর্তন &#x2206;K = K<sub>f</sub> - K<sub>i</sub> = 0 - 1 J = -1 J।</p><br><p>প্রযুক্ত বল (F) = 1 N, যা গতির বিপরীতে কাজ করছে।</p><br><p>ধরি, বস্তুটি x দূরত্ব অগ্রসর হয়ে থেমে যাবে।</p><br><p>বলের দ্বারা কৃত কাজ (W) = F * x * cos&#x03B8;</p><br><p>যেহেতু বল গতির বিপরীতে কাজ করছে, তাই &#x03B8; = 180&#x00B0; এবং cos180&#x00B0; = -1।</p><br><p>সুতরাং, W = 1 N * x * (-1) = -x J</p><br><p>কাজ-শক্তি উপপাদ্য অনুসারে, W = &#x2206;K</p><br><p>-x = -1 J</p><br><p>x = 1 m</p><br><p>সুতরাং, বস্তুটি 1 মিটার অগ্রসর হয়ে থেমে যাবে।</p>",
+        },
+        {
+          id: 29,
+          question: "বল ও শক্তির মাত্রা যথাক্রমে-",
+          options: {
+            a: "[LT<sup>-2</sup>] & [MLT<sup>-2</sup>]",
+            b: "[MLT<sup>-2</sup>] & [ML<sup>2</sup>T<sup>-2</sup>]",
+            c: "[LT<sup>-2</sup>] & [ML<sup>2</sup>T<sup>-2</sup>]",
+            d: "[MLT<sup>-2</sup>] & [ML<sup>2</sup>T<sup>-3</sup>]",
+          },
+          correct: "b",
+          explanation:
+            "<p><b>বলের মাত্রা:</b></p><br><p>আমরা জানি, বল (F) = ভর (m) × ত্বরণ (a)</p><br><p>ভরের মাত্রা = [M]</p><br><p>ত্বরণের মাত্রা = [LT<sup>-2</sup>] (কারণ ত্বরণ = বেগ/সময় = (সরণ/সময়)/সময় = সরণ/সময়<sup>2</sup>)</p><br><p>সুতরাং, বলের মাত্রা = [M] × [LT<sup>-2</sup>] = [MLT<sup>-2</sup>]</p><br><p><b>শক্তির মাত্রা:</b></p><br><p>আমরা জানি, কাজ (W) = বল (F) × সরণ (L)</p><br><p>শক্তির মাত্রা এবং কাজের মাত্রা একই।</p><br><p>বলের মাত্রা = [MLT<sup>-2</sup>]</p><br><p>সরণের মাত্রা = [L]</p><br><p>সুতরাং, শক্তির মাত্রা = [MLT<sup>-2</sup>] × [L] = [ML<sup>2</sup>T<sup>-2</sup>]</p><br><p>অতএব, বল ও শক্তির মাত্রা যথাক্রমে [MLT<sup>-2</sup>] এবং [ML<sup>2</sup>T<sup>-2</sup>]।</p>",
+        },
+        {
+          id: 30,
+          question: "বিভব শক্তির একক কোনটি?",
+          options: {
+            a: "জুল",
+            b: "জুল/কেজি",
+            c: "জুল/(কেজি)",
+            d: "নিউটন/কেজি",
+          },
+          correct: "a",
+          explanation:
+            "<p>বিভবশক্তি (Potential energy) হলো এক প্রকার শক্তি, যা কোনো বস্তুর অবস্থান বা বিন্যাসের কারণে তার মধ্যে সঞ্চিত থাকে। যেহেতু বিভবশক্তি এক প্রকার শক্তি, তাই এর SI একক হলো জুল (Joule)।</p><br><p>অন্যান্য অপশনগুলোর ব্যাখ্যা:</p><br><p><b>অপশন (B) এবং (C): জুল/কেজি -</b> এটি স্পেসিফিক এনার্জি বা একক ভরে শক্তির একক।</p><br><p><b>অপশন (D): নিউটন/কেজি -</b> এটি অভিকর্ষজ ত্বরণের (Acceleration due to gravity) একক, যা বল/ভর হিসেবেও প্রকাশ করা যায়।</p>",
+        },
+        {
+          id: 31,
+          question: "শক্তির একক কোনটি?",
+          options: {
+            a: "ওয়াট",
+            b: "অশ্বক্ষমতা",
+            c: "জুল",
+            d: "জুল-সেকেন্ড",
+          },
+          correct: "c",
+          explanation:
+            "<p>শক্তির SI একক হলো জুল (Joule)।</p><br><p>অন্যান্য অপশনগুলোর ব্যাখ্যা:</p><br><p><b>অপশন (A): ওয়াট (Watt) -</b> এটি ক্ষমতার (Power) একক। ক্ষমতা হলো কাজ করার হার বা শক্তি স্থানান্তরের হার। 1 ওয়াট = 1 জুল/সেকেন্ড।</p><br><p><b>অপশন (B): অশ্বক্ষমতা (Horsepower) -</b> এটিও ক্ষমতার একটি একক, বিশেষ করে ইঞ্জিন বা মোটরের ক্ষমতা পরিমাপের জন্য ব্যবহৃত হয়। 1 অশ্বক্ষমতা প্রায় 746 ওয়াটের সমান।</p><br><p><b>অপশন (D): জুল-সেকেন্ড (Joule-second) -</b> এটি কৌণিক ভরবেগ (Angular momentum) বা প্ল্যাঙ্কের ধ্রুবকের একক। এটি শক্তির একক নয়।</p>",
+        },
+        {
+          id: 32,
+          question: "কোনটি মিথ্যা?",
+          options: {
+            a: "শক্তির বিনিময় হতে পারে",
+            b: "শক্তির রূপান্তর হতে পারে",
+            c: "শক্তির ধ্বংস হতে পারে",
+            d: "শক্তি দ্বারা কাজ করা যায়",
+          },
+          correct: "c",
+          explanation:
+            "<p>শক্তির সংরক্ষণ নীতি (Law of Conservation of Energy) অনুযায়ী, শক্তি সৃষ্টি বা ধ্বংস করা যায় না, এটি কেবল এক রূপ থেকে অন্য রূপে রূপান্তরিত হতে পারে অথবা এক বস্তু থেকে অন্য বস্তুতে স্থানান্তরিত হতে পারে।</p><br><p><b>অপশন (A): শক্তির বিনিময় হতে পারে - সঠিক।</b> যেমন, একটি সিস্টেম থেকে অন্য সিস্টেমে শক্তির স্থানান্তর হতে পারে।</p><br><p><b>অপশন (B): শক্তির রূপান্তর হতে পারে - সঠিক।</b> যেমন, রাসায়নিক শক্তি তাপশক্তিতে, বা আলোকশক্তি বিদ্যুৎ শক্তিতে রূপান্তরিত হতে পারে।</p><br><p><b>অপশন (C): শক্তির ধ্বংস হতে পারে - মিথ্যা।</b> শক্তি কখনও ধ্বংস হয় না। এটি কেবল তার রূপ পরিবর্তন করে।</p><br><p><b>অপশন (D): শক্তি দ্বারা কাজ করা যায় - সঠিক।</b> কাজ করার সামর্থ্যই হলো শক্তি। একটি বস্তু শক্তি অর্জন করলে সেটি কাজ করতে পারে।</p>",
+        },
+        {
+          id: 33,
+          question: "কোন বস্তুর ভরবেগ ও গতিশক্তির মান সমান হলে, বস্তুটির বেগ-",
+          options: {
+            a: "1 ms<sup>-1</sup>",
+            b: "2 ms<sup>-1</sup>",
+            c: "4 ms<sup>-1</sup>",
+            d: "8 ms<sup>-1</sup>",
+          },
+          correct: "b",
+          explanation:
+            "<p>ধরি, বস্তুর ভর m এবং বেগ v।</p><br><p>ভরবেগ (P) = mv</p><br><p>গতিশক্তি (K) = 0.5mv<sup>2</sup></p><br><p>প্রশ্নানুসারে, ভরবেগ ও গতিশক্তির মান সমান, অর্থাৎ P = K।</p><br><p>mv = 0.5mv<sup>2</sup></p><br><p>উভয় পক্ষকে mv দ্বারা ভাগ করে (যেহেতু বস্তু গতিশীল, তাই m &#x2260; 0 এবং v &#x2260; 0):</p><br><p>1 = 0.5v</p><br><p>v = 1 / 0.5</p><br><p>v = 2 ms<sup>-1</sup></p><br><p>সুতরাং, বস্তুটির বেগ 2 ms<sup>-1</sup> হবে।</p>",
+        },
+        {
+          id: 34,
+          question: "কোনটি শক্তির একটি রূপ?",
+          options: {
+            a: "চাপ",
+            b: "ভরবেগ",
+            c: "আলো",
+            d: "ক্ষমতা",
+          },
+          correct: "c",
+          explanation:
+            "<p>শক্তির বিভিন্ন রূপ রয়েছে, যেমন তাপশক্তি, আলোক শক্তি, শব্দ শক্তি, বিদ্যুৎ শক্তি, রাসায়নিক শক্তি, যান্ত্রিক শক্তি, পারমাণবিক শক্তি ইত্যাদি।</p><br><p><b>অপশন (A): চাপ (Pressure) -</b> এটি প্রতি একক ক্ষেত্রফলে প্রযুক্ত বল। এটি শক্তির রূপ নয়।</p><br><p><b>অপশন (B): ভরবেগ (Momentum) -</b> এটি ভর ও বেগের গুণফল। এটি বস্তুর গতির একটি পরিমাপ, তবে শক্তির রূপ নয়।</p><br><p><b>অপশন (C): আলো (Light) -</b> এটি তড়িৎচুম্বকীয় বিকিরণের একটি রূপ এবং এটি শক্তির একটি রূপ।</p><br><p><b>অপশন (D): ক্ষমতা (Power) -</b> এটি কাজ করার হার বা শক্তি স্থানান্তরের হার। এটি শক্তির রূপ নয়।</p>",
+        },
+        {
+          id: 35,
+          question: "তীর নিক্ষেপের জন্য একটি বাঁকানো ধনুক কোন শক্তি ধারণ করে?",
+          options: {
+            a: "গতিশক্তি",
+            b: "বিভবশক্তি",
+            c: "বিদ্যুৎ শক্তি",
+            d: "চাপশক্তি",
+          },
+          correct: "b",
+          explanation:
+            "<p>যখন একটি ধনুককে তীর নিক্ষেপের জন্য বাঁকানো হয়, তখন ধনুকের প্রত্যস্থ তন্তুগুলো প্রসারিত হয় এবং তাদের মধ্যে স্থিতিস্থাপকতার কারণে কাজ করার সামর্থ্য সঞ্চিত হয়। এই সঞ্চিত শক্তিকে স্থিতিস্থাপক বিভবশক্তি (Elastic Potential Energy) বলা হয়। যখন তীরটি ছাড়া হয়, তখন এই বিভবশক্তি তীরের গতিশক্তিতে রূপান্তরিত হয়।</p>",
+        },
+        {
+          id: 36,
+          question: "ওয়াট-দিন এককটি হল-",
+          options: {
+            a: "ক্ষমতা",
+            b: "শক্তি",
+            c: "বল",
+            d: "ভরবেগ",
+          },
+          correct: "b",
+          explanation:
+            "<p>আমরা জানি, ক্ষমতা (Power) = শক্তি (Energy) / সময় (Time)।</p><br><p>সুতরাং, শক্তি (Energy) = ক্ষমতা (Power) * সময় (Time)।</p><br><p>এখানে 'ওয়াট' (Watt) হলো ক্ষমতার একক এবং 'দিন' (Day) হলো সময়ের একক।</p><br><p>অতএব, ওয়াট-দিন (Watt-day) হলো ক্ষমতা এবং সময়ের গুণফল, যা শক্তির একক।</p><br><p>উল্লেখ্য, 1 ওয়াট-দিন = 1 W * (24 * 60 * 60) s = 86400 J।</p>",
+        },
+        {
+          id: 37,
+          question:
+            "L দৈর্ঘ্যের কোন ধাতব তারকে mg বল দ্বারা টানা হলে l পরিমাণ দৈর্ঘ্য বৃদ্ধি ঘটে। এতে তারে যে যান্ত্রিক শক্তি সঞ্চিত হয় তা হল-",
+          options: {
+            a: "mg (L+l)",
+            b: "mgl",
+            c: "mgl/2",
+            d: "mg (L+l)/2",
+          },
+          correct: "c",
+          explanation:
+            "<p>একটি তারকে টানলে তার মধ্যে স্থিতিস্থাপক বিভবশক্তি সঞ্চিত হয়। এটি স্প্রিং-এর সঞ্চিত শক্তির মতোই।</p><br><p>যদি একটি তারে F বল প্রয়োগের ফলে &#x2206;L পরিমাণ দৈর্ঘ্য বৃদ্ধি ঘটে, তাহলে সঞ্চিত বিভবশক্তি বা কৃত কাজ হলো:</p><br><p>W = 0.5 * F * &#x2206;L</p><br><p>এখানে, F = mg (প্রযুক্ত বল)</p><br><p>এবং &#x2206;L = l (দৈর্ঘ্য বৃদ্ধি)</p><br><p>সুতরাং, সঞ্চিত যান্ত্রিক শক্তি = 0.5 * mg * l = mgl/2</p><br><p>এটি একটি স্থিতিস্থাপক বস্তুকে বিকৃত করার জন্য প্রয়োজনীয় কাজ এবং এই কাজই বস্তুর মধ্যে বিভবশক্তি হিসেবে সঞ্চিত হয়।</p>",
+        },
+        {
+          id: 38,
+          question:
+            "কোন বস্তুর গতিশক্তি p বৃদ্ধি পেয়ে এর আদি গতিশক্তির দ্বিগুণ হলো। নতুন ভরবেগ হবে-",
+          options: {
+            a: "&#x221A;2p",
+            b: "2p",
+            c: "4p",
+            d: "8p",
+          },
+          correct: "a",
+          explanation:
+            "<p>এই প্রশ্নটি একটু বিভ্রান্তিকর। প্রশ্নটিতে বলা হয়েছে 'গতিশক্তি p বৃদ্ধি পেয়ে এর আদি গতিশক্তির দ্বিগুণ হলো', যা ভুল বাক্য গঠন। সাধারণত, 'কোনো বস্তুর গতিশক্তি দ্বিগুণ করা হলে' অথবা 'কোনো বস্তুর গতিশক্তি p থেকে 2p তে বৃদ্ধি করা হলে' এভাবে প্রশ্ন করা হয়। এখানে মনে হচ্ছে, 'p' কে আদি ভরবেগ হিসেবে ধরা হয়েছে, কিন্তু প্রশ্নটিতে 'গতিশক্তি p বৃদ্ধি পেয়ে' বলা হয়েছে। আমরা ধরে নিচ্ছি যে প্রশ্নটি ভুলভাবে লেখা হয়েছে এবং এর অর্থ হলো 'কোনো বস্তুর গতিশক্তি দ্বিগুণ করা হলে, যদি তার আদি ভরবেগ p হয়, তাহলে নতুন ভরবেগ কত হবে?'</p><br><p>আমরা জানি, গতিশক্তি (K) এবং ভরবেগ (P) এর মধ্যে সম্পর্ক হলো:</p><br><p>K = P<sup>2</sup>/2m</p><br><p>এই সমীকরণ থেকে আমরা P কে K এর মাধ্যমে প্রকাশ করতে পারি:</p><br><p>P = &#x221A;(2mK)</p><br><p>যদি বস্তুর আদি ভরবেগ p হয়, তাহলে আদি গতিশক্তি K<sub>1</sub> থেকে আসে P = &#x221A;(2mK<sub>1</sub>)।</p><br><p>যদি গতিশক্তি দ্বিগুণ করা হয়, তাহলে নতুন গতিশক্তি হবে K<sub>2</sub> = 2K<sub>1</sub>।</p><br><p>নতুন ভরবেগ P' হবে:</p><br><p>P' = &#x221A;(2mK<sub>2</sub>)</p><br><p>P' = &#x221A;(2m * 2K<sub>1</sub>)</p><br><p>P' = &#x221A;(4mK<sub>1</sub>)</p><br><p>P' = &#x221A;4 * &#x221A;(2mK<sub>1</sub>)</p><br><p>P' = 2 * &#x221A;(2mK<sub>1</sub>)</p><br><p>যেহেতু আদি ভরবেগ p = &#x221A;(2mK<sub>1</sub>), সুতরাং</p><br><p>P' = &#x221A;2 * p</p><br><p>অতএব, নতুন ভরবেগ হবে &#x221A;2p।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                                  <label class="option" data-option="${option}">
+                                                    <div class="circle">${option}</div>
+                                                    <span class="option-text">${question.options[option]}</span>
+                                                  </label>
+                                                `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                     <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                     <div class="explanation-content">
+                                                       <div class="explanation-label">ব্যাখ্যা:</div>
+                                                       ${question.explanation}
+                                                     </div>
+                                                   </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                <p class="question-label">${
+                                                  index + 1
+                                                }. ${question.question}</p>
+                                                <div class="options">
+                                                  ${optionsHTML}
+                                                </div>
+                                                ${explanationHTML}
+                                              `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
